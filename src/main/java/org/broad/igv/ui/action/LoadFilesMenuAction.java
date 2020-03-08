@@ -84,7 +84,7 @@ public class LoadFilesMenuAction extends MenuAction {
         return trackFiles;
     }
 
-    private void loadFiles(File[] files) {
+    public void loadFiles(File[] files) {
 
         if (files != null && files.length > 0) {
 

@@ -61,9 +61,16 @@ import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
+import java.io.*;
+import javax.swing.JFileChooser;
+import java.io.File; 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import org.broad.igv.ui.action.ImportRegionsMenuAction;
+import org.broad.igv.ui.action.LoadFilesMenuAction;
 
 /**
  * @author jrobinso
@@ -81,6 +88,7 @@ public class IGVCommandBar extends javax.swing.JPanel implements IGVEventObserve
     private JideButton homeButton;
     private JPanel locationPanel;
     private JideButton refreshButton;
+    private JideButton loadTriadButton;
     private JideToggleButton roiToggleButton;
     private JideButton detailsBehaviorButton;
     private JideToggleButton rulerLineButton;
@@ -267,6 +275,60 @@ public class IGVCommandBar extends javax.swing.JPanel implements IGVEventObserve
         IGVEventBus.getInstance().post(new org.broad.igv.event.RefreshEvent());
         (new ReloadTracksMenuAction("",-1, IGV.getInstance())).actionPerformed(evt);
 
+    }
+    
+    private void loadTriadButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+        fileChooser.setDialogTitle("Choose Parent 1");
+        int result = fileChooser.showOpenDialog(null);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File parent1File = fileChooser.getSelectedFile();
+            fileChooser.setDialogTitle("Choose Parent 2");
+            result = fileChooser.showOpenDialog(null);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File parent2File = fileChooser.getSelectedFile();
+                fileChooser.setDialogTitle("Choose Child");
+                result = fileChooser.showOpenDialog(null);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    File childFile = fileChooser.getSelectedFile();
+                    fileChooser.setDialogTitle("Choose Exons File");
+                    result = fileChooser.showOpenDialog(null);
+                    if (result == JFileChooser.APPROVE_OPTION) {
+                        File exonFile = fileChooser.getSelectedFile();
+                        System.out.println(parent1File.getAbsolutePath());
+                        System.out.println(parent2File.getAbsolutePath());
+                        System.out.println(childFile.getAbsolutePath());
+                        System.out.println(exonFile.getAbsolutePath());
+                        System.out.println(exonFile.getAbsoluteFile().getParent());
+                        var loadFilesAction = new LoadFilesMenuAction("Load from File...", KeyEvent.VK_L, IGV.getInstance());
+                        
+                        Process process;
+                        Process mProcess = null;
+                        try{
+                              process = Runtime.getRuntime().exec(new String[]{"python","C:\\Users\\amholden\\hatch\\make_it_pop\\make_it_pop.py","--father",parent1File.getAbsolutePath(),"--mother",parent2File.getAbsolutePath(), "--child", childFile.getAbsolutePath()});
+                              mProcess = process;
+                        }catch(Exception e) {
+                           System.out.println("Exception Raised" + e.toString());
+                        }
+                        InputStream stdout = mProcess.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(stdout,StandardCharsets.UTF_8));
+                        String line;
+                        try{
+                           while((line = reader.readLine()) != null){
+                                System.out.println("stdout: "+ line);
+                           }
+                        }catch(IOException e){
+                              System.out.println("Exception in reading output"+ e.toString());
+                        }
+                        
+                        loadFilesAction.loadFiles(new File[]{parent1File,parent2File,childFile, new File("C:\\Users\\amholden\\hatch\\make_it_pop\\a_child.bed"), new File("C:\\Users\\amholden\\hatch\\make_it_pop\\v_child.bed")});
+//                        var regionsAction = new ImportRegionsMenuAction("a",1, IGV.getInstance());
+//                        regionsAction.readRegionsOfInterestFile(new File(exonFile.getAbsoluteFile().getParent()+"\\hg19_chromosome_sizes.tsv"));
+                    }
+                }
+            }
+        }
     }
 
     private void goButtonActionPerformed(java.awt.event.ActionEvent evt) {    // GEN-FIRST:event_goButtonActionPerformed
@@ -504,6 +566,24 @@ public class IGVCommandBar extends javax.swing.JPanel implements IGVEventObserve
             }
         });
         toolPanel.add(refreshButton, JideBoxLayout.FIX);
+        
+        
+        loadTriadButton = new com.jidesoft.swing.JideButton();
+        //refreshButton.setButtonStyle(JideButton.TOOLBOX_STYLE);
+        //refreshButton.setBorder(toolButtonBorder);
+        loadTriadButton.setAlignmentX(RIGHT_ALIGNMENT);
+        loadTriadButton.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/toolbarButtonGraphics/general/loadTriad.gif")));    // NOI18N
+        loadTriadButton.setMaximumSize(new java.awt.Dimension(32, 32));
+        loadTriadButton.setMinimumSize(new java.awt.Dimension(32, 32));
+        loadTriadButton.setPreferredSize(new java.awt.Dimension(32, 32));
+        loadTriadButton.setToolTipText("Load triad of parents and child with exon markers");
+        loadTriadButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                loadTriadButtonActionPerformed(evt);
+            }
+        });
+        toolPanel.add(loadTriadButton, JideBoxLayout.FIX);
 
 
         Icon regionOfInterestIcon =
@@ -572,6 +652,8 @@ public class IGVCommandBar extends javax.swing.JPanel implements IGVEventObserve
             }
         });
         toolPanel.add(rulerLineButton, JideBoxLayout.FIX);
+        
+        
 
         this.add(toolPanel);
 

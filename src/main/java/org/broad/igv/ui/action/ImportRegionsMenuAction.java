@@ -73,7 +73,7 @@ public class ImportRegionsMenuAction extends MenuAction {
     }
 
 
-    private void readRegionsOfInterestFile(File roiFile) {
+    public void readRegionsOfInterestFile(File roiFile) {
 
         if (roiFile == null) {
             log.info("No regions found in file");
